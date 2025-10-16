@@ -1,4 +1,4 @@
-# --- Security headers (HSTS + hardening) ---
+# --- Global security headers ---
 [[headers]]
   for = "/*"
   [headers.values]
@@ -7,13 +7,30 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
-# --- Functions config: spune lui Netlify unde sunt funcțiile ---
+# --- Functions location ---
 [functions]
   directory = "netlify/functions"
 
-# --- Decap OAuth: permite sub-rutele /authorize și /callback pe același handler ---
+# --- Decap OAuth: route all subpaths to the same function handler ---
 [[redirects]]
   from = "/.netlify/functions/oauth/*"
   to   = "/.netlify/functions/oauth"
   status = 200
   force  = true
+
+# --- CMS-only CSP so /admin can load Decap safely ---
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    Content-Security-Policy = """
+      default-src 'self';
+      script-src 'self' https://unpkg.com 'unsafe-eval';
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src https://fonts.gstatic.com data:;
+      img-src * data: blob:;
+      connect-src 'self' https://api.github.com https://github.com https://unpkg.com;
+      base-uri 'self';
+      frame-ancestors 'self';
+      form-action 'self';
+      upgrade-insecure-requests;
+    """
