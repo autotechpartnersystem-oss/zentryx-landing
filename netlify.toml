@@ -7,28 +7,29 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
+# --- Force HTTPS on www (optional but helpful) ---
+[[redirects]]
+  from = "http://www.zentryxdigital.co.uk/*"
+  to   = "https://www.zentryxdigital.co.uk/:splat"
+  status = 301
+  force  = true
+
 # --- Functions location ---
 [functions]
   directory = "netlify/functions"
 
-# --- Decap OAuth: route all subpaths to the same function handler ---
-[[redirects]]
-  from = "/.netlify/functions/oauth/*"
-  to   = "/.netlify/functions/oauth"
-  status = 200
-  force  = true
-
-# --- CMS-only CSP so /admin can load Decap safely ---
+# --- Scoped CSP only for the CMS (/admin/*) ---
 [[headers]]
   for = "/admin/*"
   [headers.values]
     Content-Security-Policy = """
-      default-src 'self';
-      script-src 'self' https://unpkg.com 'unsafe-eval';
+      default-src 'self' https://unpkg.com;
+      script-src 'self' https://unpkg.com 'unsafe-eval' 'wasm-unsafe-eval' blob:;
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src https://fonts.gstatic.com data:;
       img-src * data: blob:;
-      connect-src 'self' https://api.github.com https://github.com https://unpkg.com;
+      connect-src 'self' https://unpkg.com https://api.github.com https://github.com https://uploads.github.com;
+      worker-src 'self' blob:;
       base-uri 'self';
       frame-ancestors 'self';
       form-action 'self';
