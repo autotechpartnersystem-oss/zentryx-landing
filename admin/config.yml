@@ -1,0 +1,23 @@
+backend:
+  name: git-gateway
+  branch: main
+
+media_folder: "assets/uploads"
+public_folder: "/assets/uploads"
+
+publish_mode: editorial_workflow
+
+collections:
+  - name: "homepage"
+    label: "Homepage"
+    files:
+      - file: "content/home.json"
+        label: "Hero Section"
+        name: "hero"
+        fields:
+          - { label: "Headline", name: "headline", widget: "string" }
+          - { label: "Subhead (HTML allowed)", name: "subhead", widget: "text" }
+          - { label: "Chips", name: "chips", widget: "list", field: {label: "Chip", name: "chip", widget: "string"} }
+          - { label: "Primary CTA", name: "primary_cta", widget: "string" }
+          - { label: "Secondary CTA", name: "secondary_cta", widget: "string" }
+          - { label: "Header CTA", name: "header_cta", widget: "string" }

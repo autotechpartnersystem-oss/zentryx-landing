@@ -6,10 +6,3 @@
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-
-# Redirect naked domain to www (optional; remove if you prefer apex)
-# [[redirects]]
-#   from = "https://zentryx.example/*"
-#   to = "https://www.zentryx.example/:splat"
-#   status = 301
-#   force = true
