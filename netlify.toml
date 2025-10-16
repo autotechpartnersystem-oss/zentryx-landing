@@ -12,7 +12,9 @@
   directory = "netlify/functions"
 
 # 👉 permite sub-rutele /authorize și /callback pe același handler
+# Redirect all subpaths of /oauth to the same function
 [[redirects]]
   from = "/.netlify/functions/oauth/*"
   to = "/.netlify/functions/oauth"
   status = 200
+  force = true
