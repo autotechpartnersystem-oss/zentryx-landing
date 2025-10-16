@@ -6,3 +6,13 @@
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+
+# 👉 spune lui Netlify unde sunt funcțiile
+[functions]
+  directory = "netlify/functions"
+
+# 👉 permite sub-rutele /authorize și /callback pe același handler
+[[redirects]]
+  from = "/.netlify/functions/oauth/*"
+  to = "/.netlify/functions/oauth"
+  status = 200
