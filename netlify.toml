@@ -1,20 +1,19 @@
-# Netlify configuration for HTTPS & headers
+# --- Security headers (HSTS + hardening) ---
 [[headers]]
   for = "/*"
   [headers.values]
-    Strict-Transport-Security = '''max-age=63072000; includeSubDomains; preload'''
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
-# 👉 spune lui Netlify unde sunt funcțiile
+# --- Functions config: spune lui Netlify unde sunt funcțiile ---
 [functions]
   directory = "netlify/functions"
 
-# 👉 permite sub-rutele /authorize și /callback pe același handler
-# Redirect all subpaths of /oauth to the same function
+# --- Decap OAuth: permite sub-rutele /authorize și /callback pe același handler ---
 [[redirects]]
   from = "/.netlify/functions/oauth/*"
-  to = "/.netlify/functions/oauth"
+  to   = "/.netlify/functions/oauth"
   status = 200
-  force = true
+  force  = true
