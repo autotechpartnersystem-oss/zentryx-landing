@@ -1,4 +1,4 @@
-# --- Global security headers ---
+# --- Global security headers (site) ---
 [[headers]]
   for = "/*"
   [headers.values]
@@ -7,7 +7,7 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
-# --- Force HTTPS on www (optional but helpful) ---
+# --- Force HTTPS on www (evită mixed content) ---
 [[redirects]]
   from = "http://www.zentryxdigital.co.uk/*"
   to   = "https://www.zentryxdigital.co.uk/:splat"
@@ -18,13 +18,14 @@
 [functions]
   directory = "netlify/functions"
 
-# --- Scoped CSP only for the CMS (/admin/*) ---
+# --- CMS-only CSP: exact pe /admin (fără wildcard) ---
 [[headers]]
-  for = "/admin/*"
+  for = "/admin"
   [headers.values]
     Content-Security-Policy = """
       default-src 'self' https://unpkg.com;
       script-src 'self' https://unpkg.com 'unsafe-eval' 'wasm-unsafe-eval' blob:;
+      script-src-elem 'self' https://unpkg.com 'unsafe-inline';
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src https://fonts.gstatic.com data:;
       img-src * data: blob:;
@@ -33,5 +34,22 @@
       base-uri 'self';
       frame-ancestors 'self';
       form-action 'self';
-      upgrade-insecure-requests;
+    """
+
+# --- CMS-only CSP: pe toate rutele din /admin/*
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    Content-Security-Policy = """
+      default-src 'self' https://unpkg.com;
+      script-src 'self' https://unpkg.com 'unsafe-eval' 'wasm-unsafe-eval' blob:;
+      script-src-elem 'self' https://unpkg.com 'unsafe-inline';
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src https://fonts.gstatic.com data:;
+      img-src * data: blob:;
+      connect-src 'self' https://unpkg.com https://api.github.com https://github.com https://uploads.github.com;
+      worker-src 'self' blob:;
+      base-uri 'self';
+      frame-ancestors 'self';
+      form-action 'self';
     """
