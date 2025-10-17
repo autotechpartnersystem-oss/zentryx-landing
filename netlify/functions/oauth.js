@@ -19,12 +19,10 @@ export async function handler(event) {
     body: JSON.stringify(body),
   });
 
-  // Decap cheamă /oauth?provider=github → redirecționăm spre /authorize
   if (pathname === basePath) {
     return { statusCode: 302, headers: { Location: `${baseUrl}${basePath}/authorize` }, body: "" };
   }
 
-  // Redirect către GitHub consent
   if (pathname.endsWith("/authorize")) {
     const state = rnd(24);
     const gh = new URL("https://github.com/login/oauth/authorize");
@@ -42,7 +40,6 @@ export async function handler(event) {
     };
   }
 
-  // Callback: schimbăm code → token și îl trimitem părintelui
   if (pathname.endsWith("/callback")) {
     const code = qs.get("code");
     if (!code) return json(400, { error: "Missing code" });
@@ -64,7 +61,7 @@ export async function handler(event) {
 
     const token = data.access_token;
 
-    // Trimitem ambele formate + „împingem” părintele pe /admin/#/
+    // HTML care încearcă postMessage; dacă opener e null, face fallback pe redirect spre /admin cu token în hash
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>Authenticating…</title></head>
 <body>
 <script>
@@ -72,17 +69,28 @@ export async function handler(event) {
   var token = ${JSON.stringify(token)};
   var parentWin = window.opener || window.parent;
 
-  try { parentWin.postMessage('authorization:github:success:' + token, '*'); } catch(e) {}
-  try { parentWin.postMessage({ token: token }, '*'); } catch(e) {}
+  function sendAllTargets() {
+    var targets = [ (parentWin && parentWin.location ? parentWin.location.origin : '${baseUrl}'), '*' ];
+    try { parentWin.focus(); } catch(e) {}
+    try { targets.forEach(function(t){ parentWin.postMessage('authorization:github:success:' + token, t); }); } catch(e) {}
+    try { targets.forEach(function(t){ parentWin.postMessage({ token: token }, t); }); } catch(e) {}
+  }
 
-  // „Nudge” – dacă UI-ul e încă pe ecranul de login, forțăm reload-ul dashboard-ului
-  try { parentWin.location.hash = '#/'; } catch(e) {}
+  // dacă nu avem opener (unele browsere îl taie), facem fallback prin redirect pe /admin cu token-ul în hash
+  var noOpener = false;
+  try { noOpener = !parentWin || parentWin === window; } catch(e) { noOpener = true; }
 
-  setTimeout(function(){ try{ window.close(); } catch(e){} }, 50);
+  if (noOpener) {
+    window.location = '${baseUrl}/admin/#auth:github:success:' + encodeURIComponent(token);
+  } else {
+    sendAllTargets();
+    setTimeout(function(){ try{ window.close(); }catch(e){} }, 80);
+  }
 })();
 </script>
 <p>You can close this window.</p>
 </body></html>`;
+
     return { statusCode: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }, body: html };
   }
 
