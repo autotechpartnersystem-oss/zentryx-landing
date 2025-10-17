@@ -6,30 +6,48 @@
     <title>Zentryx CMS</title>
   </head>
   <body>
-    <!-- Rădăcina UI-ului Decap -->
     <div id="nc-root"></div>
 
-    <!-- Încarcă Decap după ce există #nc-root -->
-    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
-
-    <!-- Bridge: dacă revenim cu token în hash, îl trimitem către aplicația Decap -->
+    <!-- BRIDGE (înainte de Decap): consumă token din hash și re-trimite ca eveniment corect -->
     <script>
       (function () {
-        function tryConsumeFromHash() {
-          var m = (location.hash || '').match(/auth:github:success:([^&]+)/);
-          if (!m) return;
-          var token = decodeURIComponent(m[1]);
-          // Trimite mesajul în ambele formate pe care le suportă Decap
-          window.postMessage('authorization:github:success:' + token, window.location.origin);
-          window.postMessage({ token: token }, window.location.origin);
-          // Curăță hash-ul și revino pe dashboard
-          history.replaceState({}, '', location.pathname + '#/');
+        function postToken(token) {
+          // Formatul corect pentru Decap
+          window.postMessage({ type: 'authorization:github', token: token }, window.location.origin);
+          // Salvează pentru un re-emit ulterior, dacă Decap nu era gata
+          try { sessionStorage.setItem('decap_github_token', token); } catch (e) {}
         }
 
-        // La load și puțin după (în caz că listenerul Decap pornește cu delay)
-        window.addEventListener('load', tryConsumeFromHash);
-        setTimeout(tryConsumeFromHash, 150);
+        function tryConsumeFromHash() {
+          var m = (location.hash || '').match(/auth:github:success:([^&]+)/);
+          if (!m) return false;
+          var token = decodeURIComponent(m[1]);
+          postToken(token);
+          // Curăță hash-ul și pune dashboard-ul (#/) ca să nu rămână pe URL-ul cu token
+          history.replaceState({}, '', location.pathname + '#/');
+          return true;
+        }
+
+        // Ascultă și eventul direct din fereastra OAuth (postMessage din callback)
+        window.addEventListener('message', function (e) {
+          if (!e || !e.data) return;
+          // Acceptă atât forma corectă, cât și fallback-ul simplu { token }
+          if (e.data.type === 'authorization:github' && e.data.token) postToken(e.data.token);
+          else if (e.data.token && !e.data.type) postToken(e.data.token);
+        });
+
+        // 1) încearcă imediat hash-ul
+        tryConsumeFromHash();
+        // 2) re-emit după un mic delay (în caz că Decap se inițializează lent)
+        setTimeout(function () {
+          var t = null;
+          try { t = sessionStorage.getItem('decap_github_token'); } catch (e) {}
+          if (t) window.postMessage({ type: 'authorization:github', token: t }, window.location.origin);
+        }, 150);
       })();
     </script>
+
+    <!-- Încarcă apoi aplicația Decap -->
+    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   </body>
 </html>
