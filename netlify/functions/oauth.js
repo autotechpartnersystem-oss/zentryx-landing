@@ -19,9 +19,8 @@ export async function handler(event) {
     body: JSON.stringify(body),
   });
 
-  // --- START route (Decap calls this with ?provider=github) ---
+  // --- START (Decap apelează /oauth?provider=github) ---
   if (pathname === basePath) {
-    // Redirect to /authorize to kick off GitHub consent
     return {
       statusCode: 302,
       headers: { Location: `${baseUrl}${basePath}/authorize` },
@@ -29,7 +28,7 @@ export async function handler(event) {
     };
   }
 
-  // --- AUTHORIZE: redirect user to GitHub consent ---
+  // --- AUTHORIZE: către consimțământul GitHub ---
   if (pathname.endsWith("/authorize")) {
     const state = cryptoRandomString(24);
     const gh = new URL("https://github.com/login/oauth/authorize");
@@ -48,7 +47,7 @@ export async function handler(event) {
     };
   }
 
-  // --- CALLBACK: exchange code for access token ---
+  // --- CALLBACK: schimbă code -> token și trimite-l înapoi la /admin ---
   if (pathname.endsWith("/callback")) {
     const code = searchParams.get("code");
     if (!code) return json(400, { error: "Missing code" });
@@ -67,13 +66,32 @@ export async function handler(event) {
     const data = await tokenRes.json();
     if (!data.access_token) return json(500, { error: "Token exchange failed", details: data });
 
-    // Shape expected by Decap: { token: "<github_access_token>" }
-    return json(200, { token: data.access_token }, {
-      "Set-Cookie": "decap_oauth_state=deleted; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax",
-    });
+    // Trimite tokenul către fereastra părinte (admin) și închide tab-ul
+    const html = `<!doctype html>
+<html><head><meta charset="utf-8"><title>Authenticating…</title></head>
+<body>
+<script>
+(function () {
+  var token = ${JSON.stringify(data.access_token)};
+  try {
+    (window.opener || window.parent).postMessage({ token: token }, window.location.origin);
+  } catch (e) {
+    try { (window.opener || window.parent).postMessage({ token: token }, "*"); } catch (_) {}
+  }
+  window.close();
+})();
+</script>
+<p>You can close this window.</p>
+</body></html>`;
+
+    return {
+      statusCode: 200,
+      headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+      body: html,
+    };
   }
 
-  // --- Default: basic info (for manual tests) ---
+  // --- Info de test ---
   return json(200, {
     ok: true,
     authorize: `${basePath}/authorize`,
