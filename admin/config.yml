@@ -2,10 +2,13 @@ backend:
   name: github
   repo: autotechpartnersystem-oss/zentryx-landing
   branch: main
-  base_url: "/.netlify/functions"
-  auth_endpoint: "oauth"
+  # IMPORTANT: folosește URL absolut către funcțiile Netlify (evită probleme CORS/origin)
+  base_url: "https://www.zentryxdigital.co.uk/.netlify/functions"
+  # Endpointul de start pt OAuth; callback-ul devine automat /oauth/callback
+  auth_endpoint: "oauth/authorize"
 
-media_folder: "assets/uploads"
+# Next.js servește doar din /public – mutăm media acolo
+media_folder: "public/assets/uploads"
 public_folder: "/assets/uploads"
 
 publish_mode: editorial_workflow
