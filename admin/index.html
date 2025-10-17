@@ -14,6 +14,25 @@
 
     <!-- (opțional) inițializare manuală dacă e nevoie -->
     <script>
+      <script>
+  // Dacă am venit cu token în hash (fallback), transformă-l în mesajul pe care îl așteaptă Decap
+  (function () {
+    function tryConsumeFromHash() {
+      var m = (location.hash || '').match(/auth:github:success:([^&]+)/);
+      if (!m) return;
+      var token = decodeURIComponent(m[1]);
+      // trimite mesajul către aplicația Decap
+      window.postMessage('authorization:github:success:' + token, window.location.origin);
+      window.postMessage({ token: token }, window.location.origin);
+      // curăță hash-ul
+      history.replaceState({}, '', location.pathname + '#/');
+    }
+    // la load și puțin după (în caz că Decap setează listenerul cu delay)
+    window.addEventListener('load', tryConsumeFromHash);
+    setTimeout(tryConsumeFromHash, 150);
+  })();
+</script>
+
       if (window.CMS && !window.CMS_INITIALIZED) {
         window.CMS_MANUAL_INIT = false; // lăsăm auto-init
       }
