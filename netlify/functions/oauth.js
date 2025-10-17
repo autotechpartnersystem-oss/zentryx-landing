@@ -6,7 +6,8 @@ export async function handler(event) {
   const host = event.headers["x-forwarded-host"] || event.headers.host;
   const proto = event.headers["x-forwarded-proto"] || "https";
   const baseUrl = `${proto}://${host}`;
-  const redirectUri = `${baseUrl}/.netlify/functions/oauth/callback`;
+  const basePath = "/.netlify/functions/oauth";
+  const redirectUri = `${baseUrl}${basePath}/callback`;
 
   const url = new URL(event.rawUrl || `${baseUrl}${event.path}`);
   const pathname = url.pathname;
@@ -14,27 +15,40 @@ export async function handler(event) {
 
   const json = (status, body, headers = {}) => ({
     statusCode: status,
-    headers: { "content-type": "application/json", ...headers },
+    headers: { "content-type": "application/json", "cache-control": "no-store", ...headers },
     body: JSON.stringify(body),
   });
 
+  // --- START route (Decap calls this with ?provider=github) ---
+  if (pathname === basePath) {
+    // Redirect to /authorize to kick off GitHub consent
+    return {
+      statusCode: 302,
+      headers: { Location: `${baseUrl}${basePath}/authorize` },
+      body: "",
+    };
+  }
+
+  // --- AUTHORIZE: redirect user to GitHub consent ---
   if (pathname.endsWith("/authorize")) {
-    const state = random(24);
+    const state = cryptoRandomString(24);
     const gh = new URL("https://github.com/login/oauth/authorize");
     gh.searchParams.set("client_id", clientId);
     gh.searchParams.set("redirect_uri", redirectUri);
     gh.searchParams.set("scope", "repo,user:email");
     gh.searchParams.set("state", state);
+
     return {
       statusCode: 302,
       headers: {
         Location: gh.toString(),
-        "Set-Cookie": `decap_state=${state}; Path=/; Max-Age=300; HttpOnly; Secure; SameSite=Lax`,
+        "Set-Cookie": `decap_oauth_state=${state}; Path=/; Max-Age=300; HttpOnly; Secure; SameSite=Lax`,
       },
       body: "",
     };
   }
 
+  // --- CALLBACK: exchange code for access token ---
   if (pathname.endsWith("/callback")) {
     const code = searchParams.get("code");
     if (!code) return json(400, { error: "Missing code" });
@@ -49,24 +63,28 @@ export async function handler(event) {
         code,
       }),
     });
+
     const data = await tokenRes.json();
     if (!data.access_token) return json(500, { error: "Token exchange failed", details: data });
 
+    // Shape expected by Decap: { token: "<github_access_token>" }
     return json(200, { token: data.access_token }, {
-      "Cache-Control": "no-store",
-      "Set-Cookie": "decap_state=deleted; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax",
+      "Set-Cookie": "decap_oauth_state=deleted; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax",
     });
   }
 
+  // --- Default: basic info (for manual tests) ---
   return json(200, {
     ok: true,
-    authorize: "/.netlify/functions/oauth/authorize",
-    callback: "/.netlify/functions/oauth/callback",
+    authorize: `${basePath}/authorize`,
+    callback: `${basePath}/callback`,
   });
 }
 
-function random(len = 24) {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let s = ""; for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random()*chars.length)];
-  return s;
+// Helpers
+function cryptoRandomString(len = 24) {
+  const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let out = "";
+  for (let i = 0; i < len; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
+  return out;
 }
