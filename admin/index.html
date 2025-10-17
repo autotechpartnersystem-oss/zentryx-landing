@@ -6,36 +6,30 @@
     <title>Zentryx CMS</title>
   </head>
   <body>
-    <!-- Root explicit pentru UI-ul Decap -->
+    <!-- Rădăcina UI-ului Decap -->
     <div id="nc-root"></div>
 
-    <!-- Încarcă Decap la final, după ce există <body> și #nc-root -->
+    <!-- Încarcă Decap după ce există #nc-root -->
     <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
 
-    <!-- (opțional) inițializare manuală dacă e nevoie -->
+    <!-- Bridge: dacă revenim cu token în hash, îl trimitem către aplicația Decap -->
     <script>
-      <script>
-  // Dacă am venit cu token în hash (fallback), transformă-l în mesajul pe care îl așteaptă Decap
-  (function () {
-    function tryConsumeFromHash() {
-      var m = (location.hash || '').match(/auth:github:success:([^&]+)/);
-      if (!m) return;
-      var token = decodeURIComponent(m[1]);
-      // trimite mesajul către aplicația Decap
-      window.postMessage('authorization:github:success:' + token, window.location.origin);
-      window.postMessage({ token: token }, window.location.origin);
-      // curăță hash-ul
-      history.replaceState({}, '', location.pathname + '#/');
-    }
-    // la load și puțin după (în caz că Decap setează listenerul cu delay)
-    window.addEventListener('load', tryConsumeFromHash);
-    setTimeout(tryConsumeFromHash, 150);
-  })();
-</script>
+      (function () {
+        function tryConsumeFromHash() {
+          var m = (location.hash || '').match(/auth:github:success:([^&]+)/);
+          if (!m) return;
+          var token = decodeURIComponent(m[1]);
+          // Trimite mesajul în ambele formate pe care le suportă Decap
+          window.postMessage('authorization:github:success:' + token, window.location.origin);
+          window.postMessage({ token: token }, window.location.origin);
+          // Curăță hash-ul și revino pe dashboard
+          history.replaceState({}, '', location.pathname + '#/');
+        }
 
-      if (window.CMS && !window.CMS_INITIALIZED) {
-        window.CMS_MANUAL_INIT = false; // lăsăm auto-init
-      }
+        // La load și puțin după (în caz că listenerul Decap pornește cu delay)
+        window.addEventListener('load', tryConsumeFromHash);
+        setTimeout(tryConsumeFromHash, 150);
+      })();
     </script>
   </body>
 </html>
