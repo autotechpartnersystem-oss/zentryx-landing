@@ -14,40 +14,53 @@
   status = 301
   force  = true
 
+# --- Force HTTPS + canonical pe apex -> www ---
+[[redirects]]
+  from = "http://zentryxdigital.co.uk/*"
+  to   = "https://www.zentryxdigital.co.uk/:splat"
+  status = 301
+  force  = true
+
+[[redirects]]
+  from = "https://zentryxdigital.co.uk/*"
+  to   = "https://www.zentryxdigital.co.uk/:splat"
+  status = 301
+  force  = true
+
 # --- Functions location ---
 [functions]
   directory = "netlify/functions"
 
-# --- CMS-only CSP: exact pe /admin (fără wildcard) ---
+# --- CMS-only CSP pe /admin (pagina goală) ---
 [[headers]]
   for = "/admin"
   [headers.values]
     Content-Security-Policy = """
       default-src 'self' https://unpkg.com;
-      script-src 'self' https://unpkg.com 'unsafe-eval' 'wasm-unsafe-eval' blob:;
+      script-src 'self' https://unpkg.com 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:;
       script-src-elem 'self' https://unpkg.com 'unsafe-inline';
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src https://fonts.gstatic.com data:;
       img-src * data: blob:;
-      connect-src 'self' https://unpkg.com https://api.github.com https://github.com https://uploads.github.com;
+      connect-src 'self' https://unpkg.com https://api.github.com https://github.com https://uploads.github.com https://www.zentryxdigital.co.uk;
       worker-src 'self' blob:;
       base-uri 'self';
       frame-ancestors 'self';
       form-action 'self';
     """
 
-# --- CMS-only CSP: pe toate rutele din /admin/*
+# --- CMS-only CSP pe /admin/* (app-ul Decap) ---
 [[headers]]
   for = "/admin/*"
   [headers.values]
     Content-Security-Policy = """
       default-src 'self' https://unpkg.com;
-      script-src 'self' https://unpkg.com 'unsafe-eval' 'wasm-unsafe-eval' blob:;
+      script-src 'self' https://unpkg.com 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:;
       script-src-elem 'self' https://unpkg.com 'unsafe-inline';
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src https://fonts.gstatic.com data:;
       img-src * data: blob:;
-      connect-src 'self' https://unpkg.com https://api.github.com https://github.com https://uploads.github.com;
+      connect-src 'self' https://unpkg.com https://api.github.com https://github.com https://uploads.github.com https://www.zentryxdigital.co.uk;
       worker-src 'self' blob:;
       base-uri 'self';
       frame-ancestors 'self';
