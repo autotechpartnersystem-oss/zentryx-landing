@@ -1,10 +1,22 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Zentryx CMS</title>
-    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   </head>
-  <body></body>
+  <body>
+    <!-- Root explicit pentru UI-ul Decap -->
+    <div id="nc-root"></div>
+
+    <!-- Încarcă Decap la final, după ce există <body> și #nc-root -->
+    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+
+    <!-- (opțional) inițializare manuală dacă e nevoie -->
+    <script>
+      if (window.CMS && !window.CMS_INITIALIZED) {
+        window.CMS_MANUAL_INIT = false; // lăsăm auto-init
+      }
+    </script>
+  </body>
 </html>
